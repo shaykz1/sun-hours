@@ -1186,6 +1186,25 @@ class SunHoursApp {
     }
 
     closeCameraMeasurement() {
+        // Add any measured points to elevation profile before closing
+        if (this.measurementPoints.length > 0) {
+            this.measurementPoints.forEach(point => {
+                this.elevationProfile.push({
+                    direction: point.direction,
+                    elevation: point.elevation
+                });
+            });
+            
+            // Update the elevation profile table
+            this.renderElevationProfileTable();
+            
+            // Show success message
+            const successMsg = this.currentLanguage === 'he' ?
+                `${this.measurementPoints.length} נקודות נוספו לפרופיל הגובה.` :
+                `${this.measurementPoints.length} points added to elevation profile.`;
+            this.showSuccess(successMsg);
+        }
+        
         // Stop camera stream
         if (this.cameraStream) {
             this.cameraStream.getTracks().forEach(track => track.stop());
@@ -1195,11 +1214,12 @@ class SunHoursApp {
         // Stop orientation updates
         this.stopOrientationUpdates();
         
-        // Clean up iOS permission button
-        this.hideIOSPermissionButton();
+        // Clean up compass button
+        this.hideCompassButton();
         
         // Reset orientation support flag
         this.isOrientationSupported = false;
+        this.needsPermission = false;
         
         // Hide camera interface
         this.cameraMeasurement.style.display = 'none';
@@ -1591,20 +1611,8 @@ class SunHoursApp {
             return;
         }
         
-        this.measurementPoints.forEach(point => {
-            this.elevationProfile.push({
-                direction: point.direction,
-                elevation: point.elevation
-            });
-        });
-        
-        this.renderElevationProfileTable();
+        // Close camera measurement (this will automatically add points and update table)
         this.closeCameraMeasurement();
-        
-        const successMsg = this.currentLanguage === 'he' ?
-            `${this.measurementPoints.length} נקודות נוספו לפרופיל הגובה.` :
-            `${this.measurementPoints.length} points added to elevation profile.`;
-        this.showSuccess(successMsg);
     }
 
     updatePointsCounter() {
