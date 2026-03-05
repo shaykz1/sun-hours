@@ -43,12 +43,6 @@ class SunHoursApp {
         this.pointsCountDisplay = document.getElementById('points-count');
         this.measurementDoneBtn = document.getElementById('measurement-done');
         
-        // Manual input elements
-        this.manualInputSection = document.getElementById('manual-input-section');
-        this.toggleManualInputBtn = document.getElementById('toggle-manual-input');
-        this.manualDirectionInput = document.getElementById('manual-direction');
-        this.manualElevationInput = document.getElementById('manual-elevation');
-        this.addManualPointBtn = document.getElementById('add-manual-point');
         
         // Button elements
         this.getLocationBtn = document.getElementById('get-location');
@@ -144,14 +138,6 @@ class SunHoursApp {
             this.finishMeasurement();
         });
 
-        // Manual input event listeners
-        this.toggleManualInputBtn.addEventListener('click', () => {
-            this.toggleManualInput();
-        });
-
-        this.addManualPointBtn.addEventListener('click', () => {
-            this.addManualPoint();
-        });
 
         // Enter key triggers calculation
         document.addEventListener('keypress', (e) => {
@@ -1194,75 +1180,112 @@ class SunHoursApp {
     }
 
     async initializeOrientationSensors() {
+        console.log('Initializing orientation sensors...');
+        
         // Check if DeviceOrientationEvent is supported
         if (typeof DeviceOrientationEvent !== 'undefined') {
             // Request permission for iOS 13+
             if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                try {
-                    // Show permission request button for iOS
-                    this.showIOSPermissionButton();
-                } catch (error) {
-                    console.error('Orientation permission error:', error);
-                    this.showOrientationPermissionError();
-                }
+                console.log('iOS device detected, showing permission button');
+                this.showIOSPermissionButton();
             } else {
-                // Non-iOS devices
+                // Non-iOS devices - start immediately
                 this.isOrientationSupported = true;
-                console.log('Device orientation supported (non-iOS)');
+                console.log('Non-iOS device, starting orientation updates');
+                this.startOrientationUpdates();
             }
         } else {
+            console.log('DeviceOrientationEvent not supported');
             this.showOrientationNotSupported();
         }
     }
 
     async requestIOSOrientationPermission() {
+        console.log('Requesting iOS orientation permission...');
         try {
             const response = await DeviceOrientationEvent.requestPermission();
+            console.log('Permission response:', response);
+            
             if (response === 'granted') {
                 this.isOrientationSupported = true;
                 console.log('Device orientation permission granted');
                 this.hideIOSPermissionButton();
                 this.startOrientationUpdates();
+                
+                const successMsg = this.currentLanguage === 'he' ?
+                    'הרשאות חיישני כיוון אושרו!' :
+                    'Orientation sensor permissions granted!';
+                this.showSuccess(successMsg);
             } else {
-                this.showOrientationPermissionError();
+                console.log('Permission denied:', response);
+                const errorMsg = this.currentLanguage === 'he' ?
+                    'הרשאות חיישני כיוון נדחו. אנא אפשר בהגדרות הדפדפן.' :
+                    'Orientation sensor permissions denied. Please enable in browser settings.';
+                this.showError(errorMsg);
             }
         } catch (error) {
             console.error('Orientation permission error:', error);
-            this.showOrientationPermissionError();
+            const errorMsg = this.currentLanguage === 'he' ?
+                'שגיאה בבקשת הרשאות חיישני כיוון.' :
+                'Error requesting orientation sensor permissions.';
+            this.showError(errorMsg);
         }
     }
 
     showIOSPermissionButton() {
-        // Create permission button if it doesn't exist
-        if (!document.getElementById('ios-permission-btn')) {
-            const permissionBtn = document.createElement('button');
-            permissionBtn.id = 'ios-permission-btn';
-            permissionBtn.className = 'camera-btn';
-            permissionBtn.style.cssText = `
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: #e17055;
-                color: white;
-                border: none;
-                padding: 15px 25px;
-                border-radius: 8px;
-                font-size: 16px;
-                font-weight: 600;
-                z-index: 1001;
-            `;
-            
-            const buttonText = this.currentLanguage === 'he' ?
-                'אפשר חיישני כיוון' : 'Enable Orientation Sensors';
-            permissionBtn.textContent = buttonText;
-            
-            permissionBtn.addEventListener('click', () => {
-                this.requestIOSOrientationPermission();
-            });
-            
-            this.cameraOverlay.appendChild(permissionBtn);
-        }
+        // Remove existing button if any
+        this.hideIOSPermissionButton();
+        
+        // Create permission button
+        const permissionBtn = document.createElement('button');
+        permissionBtn.id = 'ios-permission-btn';
+        permissionBtn.className = 'camera-btn permission-btn';
+        permissionBtn.style.cssText = `
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #e17055;
+            color: white;
+            border: none;
+            padding: 20px 30px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            z-index: 1001;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        `;
+        
+        const buttonText = this.currentLanguage === 'he' ?
+            '🧭 אפשר חיישני כיוון' : '🧭 Enable Orientation Sensors';
+        permissionBtn.textContent = buttonText;
+        
+        // Add hover effect
+        permissionBtn.addEventListener('mouseenter', () => {
+            permissionBtn.style.background = '#d63031';
+            permissionBtn.style.transform = 'translate(-50%, -50%) scale(1.05)';
+        });
+        
+        permissionBtn.addEventListener('mouseleave', () => {
+            permissionBtn.style.background = '#e17055';
+            permissionBtn.style.transform = 'translate(-50%, -50%) scale(1)';
+        });
+        
+        permissionBtn.addEventListener('click', () => {
+            console.log('Permission button clicked');
+            this.requestIOSOrientationPermission();
+        });
+        
+        // Add to camera overlay
+        this.cameraOverlay.appendChild(permissionBtn);
+        
+        // Show instruction message
+        const instructionMsg = this.currentLanguage === 'he' ?
+            'לחץ כדי לאפשר גישה לחיישני הכיוון של המכשיר' :
+            'Tap to enable access to device orientation sensors';
+        this.showSuccess(instructionMsg);
     }
 
     hideIOSPermissionButton() {
@@ -1473,61 +1496,6 @@ class SunHoursApp {
             'חיישני כיוון לא נתמכים במכשיר זה.' :
             'Orientation sensors not supported on this device.';
         this.showError(errorMsg);
-    }
-    toggleManualInput() {
-        const isVisible = this.manualInputSection.style.display !== 'none';
-        this.manualInputSection.style.display = isVisible ? 'none' : 'block';
-        
-        const buttonText = isVisible ?
-            (this.currentLanguage === 'he' ? '📝 הזנה ידנית' : '📝 Manual Input') :
-            (this.currentLanguage === 'he' ? '❌ סגור הזנה ידנית' : '❌ Close Manual Input');
-        this.toggleManualInputBtn.textContent = buttonText;
-    }
-
-    addManualPoint() {
-        const direction = parseFloat(this.manualDirectionInput.value);
-        const elevation = parseFloat(this.manualElevationInput.value);
-        
-        if (isNaN(direction) || isNaN(elevation)) {
-            const errorMsg = this.currentLanguage === 'he' ?
-                'אנא הזן ערכי כיוון וגובה תקינים.' :
-                'Please enter valid direction and elevation values.';
-            this.showError(errorMsg);
-            return;
-        }
-        
-        if (direction < 0 || direction > 360) {
-            const errorMsg = this.currentLanguage === 'he' ?
-                'כיוון חייב להיות בין 0 ל-360 מעלות.' :
-                'Direction must be between 0 and 360 degrees.';
-            this.showError(errorMsg);
-            return;
-        }
-        
-        if (elevation < -90 || elevation > 90) {
-            const errorMsg = this.currentLanguage === 'he' ?
-                'גובה חייב להיות בין -90 ל-90 מעלות.' :
-                'Elevation must be between -90 and 90 degrees.';
-            this.showError(errorMsg);
-            return;
-        }
-        
-        const point = {
-            direction: Math.round(direction),
-            elevation: Math.round(elevation)
-        };
-        
-        this.measurementPoints.push(point);
-        this.updatePointsCounter();
-        
-        // Clear input fields
-        this.manualDirectionInput.value = '';
-        this.manualElevationInput.value = '';
-        
-        const successMsg = this.currentLanguage === 'he' ?
-            `נקודה ידנית נוספה: ${point.direction}°, ${point.elevation}°` :
-            `Manual point added: ${point.direction}°, ${point.elevation}°`;
-        this.showSuccess(successMsg);
     }
 }
 
