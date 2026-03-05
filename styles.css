@@ -556,7 +556,43 @@ html[dir="rtl"] .sampling-table td {
     text-align: right;
 }
 
+/* Tablet and mobile responsive design */
+@media (max-width: 1024px) {
+    .container {
+        margin: 10px;
+        border-radius: 15px;
+    }
+    
+    .input-section {
+        padding: 25px;
+        gap: 25px;
+    }
+    
+    .advanced-options {
+        padding: 15px;
+    }
+    
+    .elevation-profile-controls {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .add-btn, .clear-btn, .measure-btn {
+        flex: 1;
+        min-width: 120px;
+    }
+}
+
 @media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+    
+    .container {
+        margin: 0;
+        border-radius: 10px;
+    }
+    
     .input-section {
         grid-template-columns: 1fr;
         gap: 20px;
@@ -569,11 +605,195 @@ html[dir="rtl"] .sampling-table td {
     
     header h1 {
         font-size: 2em;
+        margin-bottom: 8px;
+    }
+    
+    header p {
+        font-size: 1em;
+    }
+    
+    .header-controls {
+        position: static;
+        text-align: center;
+        margin-bottom: 15px;
     }
     
     .compass {
         width: 120px;
         height: 120px;
+    }
+    
+    .input-group {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+    
+    .input-group label {
+        min-width: auto;
+        text-align: left;
+    }
+    
+    .input-group input {
+        width: 100%;
+    }
+    
+    .unit {
+        min-width: auto;
+        text-align: left;
+    }
+    
+    .advanced-options {
+        padding: 15px;
+        margin-top: 15px;
+    }
+    
+    .elevation-profile-controls {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .add-btn, .clear-btn, .measure-btn {
+        width: 100%;
+        padding: 12px;
+        font-size: 14px;
+    }
+    
+    .elevation-profile-table-container {
+        max-height: 150px;
+    }
+    
+    .elevation-table {
+        font-size: 11px;
+    }
+    
+    .elevation-table th,
+    .elevation-table td {
+        padding: 6px 8px;
+    }
+    
+    .elevation-table input {
+        width: 60px;
+        padding: 3px 6px;
+        font-size: 11px;
+    }
+    
+    .calculate-btn {
+        padding: 12px 20px;
+        font-size: 16px;
+    }
+    
+    .results-section {
+        padding: 20px;
+    }
+    
+    .result-card {
+        padding: 15px;
+    }
+    
+    .result-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+        padding: 8px 0;
+    }
+    
+    .result-item .label {
+        font-size: 14px;
+    }
+    
+    .result-item .value {
+        font-size: 16px;
+    }
+    
+    .sun-path-chart,
+    .chart-container,
+    .yearly-chart {
+        padding: 15px;
+    }
+    
+    .chart-container h4 {
+        font-size: 1em;
+        margin-bottom: 10px;
+    }
+    
+    .info-section {
+        padding: 20px;
+    }
+    
+    .info-section li {
+        font-size: 14px;
+        line-height: 1.5;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 5px;
+    }
+    
+    .container {
+        border-radius: 8px;
+    }
+    
+    .input-section {
+        padding: 15px;
+        gap: 15px;
+    }
+    
+    header {
+        padding: 15px;
+    }
+    
+    header h1 {
+        font-size: 1.8em;
+    }
+    
+    .compass {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .compass-labels span {
+        font-size: 12px;
+    }
+    
+    .input-group input {
+        padding: 10px;
+        font-size: 14px;
+    }
+    
+    .location-btn {
+        padding: 10px 15px;
+        font-size: 14px;
+    }
+    
+    .calculate-btn {
+        padding: 10px 15px;
+        font-size: 14px;
+    }
+    
+    .advanced-options {
+        padding: 12px;
+    }
+    
+    .elevation-table input {
+        width: 50px;
+        padding: 2px 4px;
+        font-size: 10px;
+    }
+    
+    .remove-btn {
+        padding: 3px 6px;
+        font-size: 10px;
+    }
+    
+    .result-item .value {
+        font-size: 14px;
+    }
+    
+    .chart-container h4 {
+        font-size: 0.9em;
     }
 }
 
@@ -945,14 +1165,67 @@ html[dir="rtl"] .elevation-table td {
     margin-top: 2px;
 }
 
-/* Mobile optimizations */
+/* Camera page mobile optimizations */
+@media (max-width: 1024px) {
+    .camera-header {
+        padding: 12px 18px;
+    }
+    
+    .hud-azimuth {
+        padding-top: 20px;
+    }
+    
+    .hud-panel {
+        padding: 10px 20px;
+    }
+    
+    .hud-main-value {
+        font-size: 28px;
+    }
+    
+    .measurement-display {
+        gap: 30px;
+        padding: 18px;
+    }
+    
+    .camera-controls {
+        padding: 18px;
+        gap: 12px;
+    }
+    
+    .camera-btn {
+        padding: 11px 18px;
+        font-size: 13px;
+        max-width: 110px;
+    }
+}
+
 @media (max-width: 768px) {
     .camera-header {
         padding: 10px 15px;
+        flex-wrap: wrap;
+        gap: 10px;
     }
     
     .camera-header h3 {
         font-size: 16px;
+        order: 2;
+        flex: 1;
+        text-align: center;
+    }
+    
+    .camera-nav-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+        min-width: 60px;
+    }
+    
+    .camera-nav-btn:first-child {
+        order: 1;
+    }
+    
+    .camera-nav-btn:last-child {
+        order: 3;
     }
     
     .compass-strip-container {
@@ -964,6 +1237,43 @@ html[dir="rtl"] .elevation-table td {
         margin: 0 24px;
     }
     
+    .hud-azimuth {
+        padding-top: 16px;
+    }
+    
+    .hud-panel {
+        padding: 8px 16px;
+        border-radius: 10px;
+    }
+    
+    .hud-panel-right {
+        border-radius: 10px 0 0 10px;
+    }
+    
+    .hud-content {
+        gap: 12px;
+    }
+    
+    .hud-icon {
+        font-size: 18px;
+    }
+    
+    .hud-main-value {
+        font-size: 24px;
+        letter-spacing: 1px;
+    }
+    
+    .hud-cardinal {
+        font-size: 12px;
+        letter-spacing: 2px;
+    }
+    
+    .hud-label {
+        font-size: 9px;
+        letter-spacing: 2px;
+        margin-top: 3px;
+    }
+    
     .measurement-display {
         gap: 20px;
         padding: 15px;
@@ -973,6 +1283,11 @@ html[dir="rtl"] .elevation-table td {
     .measurement-reading {
         min-width: 100px;
         padding: 10px 16px;
+        border-radius: 10px;
+    }
+    
+    .measurement-label {
+        font-size: 10px;
     }
     
     .measurement-value {
@@ -982,12 +1297,33 @@ html[dir="rtl"] .elevation-table td {
     .camera-controls {
         padding: 15px;
         gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
     }
     
     .camera-btn {
         padding: 10px 15px;
         font-size: 12px;
         max-width: 100px;
+        flex: 1;
+        min-width: 80px;
+    }
+    
+    .compass-btn {
+        padding: 10px 20px;
+        font-size: 13px;
+        border-radius: 20px;
+        max-width: 200px;
+        width: 100%;
+    }
+    
+    .points-counter {
+        font-size: 11px;
+        min-width: 50px;
+    }
+    
+    .points-counter span:last-child {
+        font-size: 16px;
     }
     
     #ios-permission-btn {
@@ -996,24 +1332,159 @@ html[dir="rtl"] .elevation-table td {
     }
 }
 
-/* Very small screens */
+/* Very small screens - Camera page */
 @media (max-width: 480px) {
+    .camera-header {
+        padding: 8px 12px;
+        gap: 8px;
+    }
+    
+    .camera-header h3 {
+        font-size: 14px;
+    }
+    
+    .camera-nav-btn {
+        padding: 5px 8px;
+        font-size: 11px;
+        min-width: 50px;
+    }
+    
+    .compass-strip-container {
+        top: 55px;
+        height: 24px;
+    }
+    
+    .compass-strip {
+        margin: 0 16px;
+    }
+    
+    .hud-azimuth {
+        padding-top: 12px;
+    }
+    
+    .hud-panel {
+        padding: 6px 12px;
+        border-radius: 8px;
+    }
+    
+    .hud-panel-right {
+        border-radius: 8px 0 0 8px;
+    }
+    
+    .hud-content {
+        gap: 8px;
+    }
+    
+    .hud-icon {
+        font-size: 16px;
+    }
+    
+    .hud-main-value {
+        font-size: 20px;
+        letter-spacing: 1px;
+    }
+    
+    .hud-cardinal {
+        font-size: 10px;
+        letter-spacing: 1px;
+    }
+    
+    .hud-label {
+        font-size: 8px;
+        letter-spacing: 1px;
+        margin-top: 2px;
+    }
+    
     .measurement-display {
         gap: 15px;
         padding: 12px;
+        flex-direction: column;
+        align-items: center;
     }
     
     .measurement-reading {
         min-width: 90px;
         padding: 8px 12px;
+        border-radius: 8px;
+        width: 100%;
+        max-width: 150px;
+    }
+    
+    .measurement-label {
+        font-size: 9px;
     }
     
     .measurement-value {
         font-size: 20px;
     }
     
-    .compass-strip {
-        margin: 0 16px;
+    .camera-controls {
+        padding: 12px;
+        gap: 8px;
+        flex-direction: column;
+    }
+    
+    .camera-btn {
+        padding: 8px 12px;
+        font-size: 11px;
+        max-width: none;
+        width: 100%;
+        min-width: auto;
+    }
+    
+    .compass-btn {
+        padding: 8px 16px;
+        font-size: 12px;
+        border-radius: 16px;
+        max-width: none;
+        width: 100%;
+    }
+    
+    .points-counter {
+        font-size: 10px;
+        min-width: 40px;
+    }
+    
+    .points-counter span:last-child {
+        font-size: 14px;
+    }
+    
+    .manual-input-section {
+        padding: 15px;
+        margin: 10px 0;
+    }
+    
+    .manual-input-section h4 {
+        font-size: 14px;
+        margin-bottom: 12px;
+    }
+    
+    .manual-input-group {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+    
+    .manual-input-group label {
+        min-width: auto;
+        font-size: 12px;
+    }
+    
+    .manual-input-group input {
+        min-width: auto;
+        padding: 6px 10px;
+        font-size: 14px;
+    }
+    
+    .manual-input-group span {
+        font-size: 12px;
+        text-align: center;
+    }
+    
+    .toggle-btn {
+        font-size: 12px;
+        padding: 8px 16px;
     }
 }
 
