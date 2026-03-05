@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sun Hours Calculator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-controls">
+                <select id="language-selector" class="language-btn">
+                    <option value="en">English</option>
+                    <option value="he">עברית</option>
+                </select>
+            </div>
+            <h1 data-en="☀️ Direct Sun Hours Calculator" data-he="☀️ מחשבון שעות שמש ישירות">☀️ Direct Sun Hours Calculator</h1>
+            <p data-en="Calculate direct sunlight hours for any location, direction, and date" data-he="חישוב שעות אור שמש ישיר לכל מיקום, כיוון ותאריך">Calculate direct sunlight hours for any location, direction, and date</p>
+        </header>
+
+        <div class="input-section">
+            <div class="location-input">
+                <h3 data-en="📍 Location" data-he="📍 מיקום">📍 Location</h3>
+                <div class="input-group">
+                    <label for="latitude" data-en="Latitude:" data-he="קו רוחב:">Latitude:</label>
+                    <input type="number" id="latitude" step="0.000001" placeholder="e.g., 32.0853" value="32.0853">
+                    <span class="unit">°</span>
+                </div>
+                <div class="input-group">
+                    <label for="longitude" data-en="Longitude:" data-he="קו אורך:">Longitude:</label>
+                    <input type="number" id="longitude" step="0.000001" placeholder="e.g., 34.7818" value="34.7818">
+                    <span class="unit">°</span>
+                </div>
+                <button id="get-location" class="location-btn" data-en="📱 Use Current Location" data-he="📱 השתמש במיקום נוכחי">📱 Use Current Location</button>
+            </div>
+
+            <div class="direction-input">
+                <h3 data-en="🧭 Compass Direction Range" data-he="🧭 טווח כיוון מצפן">🧭 Compass Direction Range</h3>
+                <div class="input-group">
+                    <label for="direction-start" data-en="From Direction:" data-he="מכיוון:">From Direction:</label>
+                    <input type="number" id="direction-start" min="0" max="360" placeholder="e.g., 90" value="90">
+                    <span class="unit" data-en="° (0° = North)" data-he="° (0° = צפון)">° (0° = North)</span>
+                </div>
+                <div class="input-group">
+                    <label for="direction-end" data-en="To Direction:" data-he="לכיוון:">To Direction:</label>
+                    <input type="number" id="direction-end" min="0" max="360" placeholder="e.g., 270" value="270">
+                    <span class="unit" data-en="° (0° = North)" data-he="° (0° = צפון)">° (0° = North)</span>
+                </div>
+                <div class="compass-visual">
+                    <div class="compass">
+                        <div class="compass-needle" id="compass-needle"></div>
+                        <div class="compass-labels">
+                            <span class="north" data-en="N" data-he="צ">N</span>
+                            <span class="east" data-en="E" data-he="מ">E</span>
+                            <span class="south" data-en="S" data-he="ד">S</span>
+                            <span class="west" data-en="W" data-he="מע">W</span>
+                        </div>
+                        <div class="direction-arc" id="direction-arc"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="date-input">
+                <h3 data-en="📅 Date" data-he="📅 תאריך">📅 Date</h3>
+                <div class="input-group">
+                    <label for="calculation-date" data-en="Date:" data-he="תאריך:">Date:</label>
+                    <input type="date" id="calculation-date">
+                </div>
+            </div>
+
+            <div class="advanced-options">
+                <h3 data-en="⚙️ Advanced Options" data-he="⚙️ אפשרויות מתקדמות">⚙️ Advanced Options</h3>
+                <div class="input-group">
+                    <label for="min-elevation" data-en="Minimum Elevation:" data-he="זווית הגבהה מינימלית:">Minimum Elevation:</label>
+                    <input type="number" id="min-elevation" min="0" max="90" placeholder="0" value="0">
+                    <span class="unit" data-en="° above horizon" data-he="° מעל האופק">° above horizon</span>
+                </div>
+                
+                <div class="elevation-profile-section">
+                    <h4 data-en="🏔️ Elevation Profile (Terrain/Obstacles)" data-he="🏔️ פרופיל גובה (שטח/מכשולים)">🏔️ Elevation Profile (Terrain/Obstacles)</h4>
+                    <p class="help-text" data-en="Define minimum elevation angles for specific directions to account for terrain, buildings, or other obstacles." data-he="הגדר זוויות גובה מינימליות לכיוונים ספציפיים כדי לקחת בחשבון שטח, בניינים או מכשולים אחרים.">Define minimum elevation angles for specific directions to account for terrain, buildings, or other obstacles.</p>
+                    
+                    <div class="elevation-profile-controls">
+                        <button type="button" id="add-elevation-point" class="add-btn" data-en="+ Add Point" data-he="+ הוסף נקודה">+ Add Point</button>
+                        <button type="button" id="measure-points" class="measure-btn" data-en="📷 Measure Points" data-he="📷 מדוד נקודות">📷 Measure Points</button>
+                        <button type="button" id="clear-elevation-profile" class="clear-btn" data-en="Clear All" data-he="נקה הכל">Clear All</button>
+                    </div>
+                    
+                    <div class="elevation-profile-table-container">
+                        <table id="elevation-profile-table" class="elevation-table">
+                            <thead>
+                                <tr>
+                                    <th data-en="Direction (°)" data-he="כיוון (°)">Direction (°)</th>
+                                    <th data-en="Min Elevation (°)" data-he="גובה מינימלי (°)">Min Elevation (°)</th>
+                                    <th data-en="Actions" data-he="פעולות">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="elevation-profile-tbody">
+                                <!-- Elevation points will be added here dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <button id="calculate" class="calculate-btn" data-en="🔄 Calculate Sun Hours" data-he="🔄 חשב שעות שמש">🔄 Calculate Sun Hours</button>
+        </div>
+
+        <div class="results-section" id="results-section" style="display: none;">
+            <h3 data-en="☀️ Results" data-he="☀️ תוצאות">☀️ Results</h3>
+            <div class="result-card">
+                <div class="result-item">
+                    <span class="label" data-en="Direct Sun Hours:" data-he="שעות שמש ישירות:">Direct Sun Hours:</span>
+                    <span class="value" id="sun-hours">--</span>
+                </div>
+                <div class="result-item">
+                    <span class="label" data-en="Sunrise Time:" data-he="זמן זריחה:">Sunrise Time:</span>
+                    <span class="value" id="sunrise-time">--</span>
+                </div>
+                <div class="result-item">
+                    <span class="label" data-en="Sunset Time:" data-he="זמן שקיעה:">Sunset Time:</span>
+                    <span class="value" id="sunset-time">--</span>
+                </div>
+                <div class="result-item">
+                    <span class="label" data-en="Sun in Range:" data-he="שמש בטווח:">Sun in Range:</span>
+                    <span class="value" id="sun-range-time">--</span>
+                </div>
+                <div class="result-item">
+                    <span class="label" data-en="Timezone Offset:" data-he="הפרש שעון:">Timezone Offset:</span>
+                    <span class="value" id="timezone-offset">--</span>
+                </div>
+            </div>
+            
+            <div class="sun-path-chart">
+                <h4 data-en="Sun Path Visualization" data-he="הדמיית מסלול השמש">Sun Path Visualization</h4>
+                <canvas id="sun-path-canvas" width="400" height="300"></canvas>
+            </div>
+
+            <div class="sun-analysis-charts">
+                <div class="chart-container">
+                    <h4 data-en="Sun Direction vs Time" data-he="כיוון השמש לעומת זמן">Sun Direction vs Time</h4>
+                    <canvas id="direction-time-chart" width="400" height="300"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h4 data-en="Sun Elevation vs Time" data-he="גובה השמש לעומת זמן">Sun Elevation vs Time</h4>
+                    <canvas id="elevation-time-chart" width="400" height="300"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h4 data-en="Solar Irradiance vs Time" data-he="קרינת שמש לעומת זמן">Solar Irradiance vs Time</h4>
+                    <canvas id="irradiance-time-chart" width="400" height="300"></canvas>
+                </div>
+            </div>
+
+            <div class="yearly-chart" id="yearly-chart" style="display: none;">
+                <h4 data-en="Yearly Sun Hours Chart" data-he="גרף שעות שמש שנתי">Yearly Sun Hours Chart</h4>
+                <canvas id="yearly-chart-canvas" width="800" height="400"></canvas>
+            </div>
+
+            <div class="yearly-chart" id="yearly-irradiance-chart" style="display: none;">
+                <h4 data-en="Yearly Solar Irradiance Chart" data-he="גרף קרינת שמש שנתי">Yearly Solar Irradiance Chart</h4>
+                <canvas id="yearly-irradiance-canvas" width="800" height="400"></canvas>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h3 data-en="ℹ️ How it works" data-he="ℹ️ איך זה עובד">ℹ️ How it works</h3>
+            <ul>
+                <li data-en="<strong>GPS Location:</strong> Latitude and longitude determine your position on Earth" data-he="<strong>מיקום GPS:</strong> קו רוחב וקו אורך קובעים את מיקומך על כדור הארץ"><strong>GPS Location:</strong> Latitude and longitude determine your position on Earth</li>
+                <li data-en="<strong>Compass Direction:</strong> Specify the range of directions you want to analyze (0° = North, 90° = East, 180° = South, 270° = West)" data-he="<strong>כיוון מצפן:</strong> ציין את טווח הכיוונים שברצונך לנתח (0° = צפון, 90° = מזרח, 180° = דרום, 270° = מערב)"><strong>Compass Direction:</strong> Specify the range of directions you want to analyze (0° = North, 90° = East, 180° = South, 270° = West)</li>
+                <li data-en="<strong>Date:</strong> Solar position changes throughout the year" data-he="<strong>תאריך:</strong> מיקום השמש משתנה לאורך השנה"><strong>Date:</strong> Solar position changes throughout the year</li>
+                <li data-en="<strong>Calculation:</strong> Uses astronomical algorithms to determine when the sun is within your specified direction range" data-he="<strong>חישוב:</strong> משתמש באלגוריתמים אסטרונומיים כדי לקבוע מתי השמש נמצאת בטווח הכיוון שציינת"><strong>Calculation:</strong> Uses astronomical algorithms to determine when the sun is within your specified direction range</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Camera Measurement Interface -->
+    <div class="camera-measurement" id="camera-measurement" style="display: none;">
+        <div class="camera-header">
+            <button type="button" id="camera-return" class="camera-nav-btn" data-en="← Return" data-he="← חזור">← Return</button>
+            <h3 data-en="Camera Measurement" data-he="מדידה במצלמה">Camera Measurement</h3>
+            <button type="button" id="camera-help" class="camera-nav-btn" data-en="?" data-he="?">?</button>
+        </div>
+        
+        <div class="camera-container">
+            <video id="camera-video" autoplay playsinline></video>
+            <canvas id="camera-overlay"></canvas>
+            <div class="camera-crosshair">
+                <div class="crosshair-horizontal"></div>
+                <div class="crosshair-vertical"></div>
+            </div>
+        </div>
+        
+        <div class="measurement-display">
+            <div class="measurement-reading">
+                <span class="measurement-label" data-en="Direction:" data-he="כיוון:">Direction:</span>
+                <span class="measurement-value" id="current-direction">--°</span>
+            </div>
+            <div class="measurement-reading">
+                <span class="measurement-label" data-en="Elevation:" data-he="גובה:">Elevation:</span>
+                <span class="measurement-value" id="current-elevation">--°</span>
+            </div>
+        </div>
+        
+        <div class="camera-controls">
+            <button type="button" id="add-measurement-point" class="camera-btn add-point-btn" data-en="📍 Add Point" data-he="📍 הוסף נקודה">📍 Add Point</button>
+            <button type="button" id="remove-last-point" class="camera-btn remove-point-btn" data-en="🗑️ Remove Last" data-he="🗑️ הסר אחרון">🗑️ Remove Last</button>
+            <div class="points-counter">
+                <span data-en="Points:" data-he="נקודות:">Points:</span>
+                <span id="points-count">0</span>
+            </div>
+            <button type="button" id="measurement-done" class="camera-btn done-btn" data-en="✓ Done" data-he="✓ סיום">✓ Done</button>
+        </div>
+    </div>
+
+    <script src="solar-calculator.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
