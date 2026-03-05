@@ -57,6 +57,8 @@ class SunHoursApp {
         this.cameraStream = null;
         this.orientationData = { direction: null, elevation: null };
         this.isOrientationSupported = false;
+        this.orientationCalibrated = false;
+        this.orientationReadings = [];
         
         // Result elements
         this.resultsSection = document.getElementById('results-section');
@@ -1214,20 +1216,20 @@ class SunHoursApp {
                 
                 const successMsg = this.currentLanguage === 'he' ?
                     'הרשאות חיישני כיוון אושרו!' :
-                    'Orientation sensor permissions granted!';
+                    'Compass enabled successfully!';
                 this.showSuccess(successMsg);
             } else {
                 console.log('Permission denied:', response);
                 const errorMsg = this.currentLanguage === 'he' ?
                     'הרשאות חיישני כיוון נדחו. אנא אפשר בהגדרות הדפדפן.' :
-                    'Orientation sensor permissions denied. Please enable in browser settings.';
+                    'Compass permission denied. Please enable in browser settings.';
                 this.showError(errorMsg);
             }
         } catch (error) {
             console.error('Orientation permission error:', error);
             const errorMsg = this.currentLanguage === 'he' ?
                 'שגיאה בבקשת הרשאות חיישני כיוון.' :
-                'Error requesting orientation sensor permissions.';
+                'Error requesting compass permissions.';
             this.showError(errorMsg);
         }
     }
@@ -1245,32 +1247,38 @@ class SunHoursApp {
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: #e17055;
+            background: rgba(116, 185, 255, 0.9);
             color: white;
-            border: none;
-            padding: 20px 30px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 16px 24px;
             border-radius: 12px;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
             z-index: 1001;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(12px);
             cursor: pointer;
             transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         `;
         
         const buttonText = this.currentLanguage === 'he' ?
-            '🧭 אפשר חיישני כיוון' : '🧭 Enable Orientation Sensors';
-        permissionBtn.textContent = buttonText;
+            '🧭 אפשר מצפן' : '🧭 Enable Compass';
+        permissionBtn.innerHTML = buttonText;
         
         // Add hover effect
         permissionBtn.addEventListener('mouseenter', () => {
-            permissionBtn.style.background = '#d63031';
+            permissionBtn.style.background = 'rgba(9, 132, 227, 0.9)';
             permissionBtn.style.transform = 'translate(-50%, -50%) scale(1.05)';
+            permissionBtn.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.4)';
         });
         
         permissionBtn.addEventListener('mouseleave', () => {
-            permissionBtn.style.background = '#e17055';
+            permissionBtn.style.background = 'rgba(116, 185, 255, 0.9)';
             permissionBtn.style.transform = 'translate(-50%, -50%) scale(1)';
+            permissionBtn.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.3)';
         });
         
         permissionBtn.addEventListener('click', () => {
@@ -1303,46 +1311,23 @@ class SunHoursApp {
                 alpha: event.alpha,
                 beta: event.beta,
                 gamma: event.gamma,
-                absolute: event.absolute
+                webkitCompassHeading: event.webkitCompassHeading
             });
             
-            // Get compass direction (alpha)
-            let direction = event.alpha;
-            if (direction !== null && direction !== undefined) {
-                // For iOS, we might need to adjust based on screen orientation
-                const screenOrientation = screen.orientation ? screen.orientation.angle : 0;
-                
-                // Normalize compass direction
-                direction = direction + screenOrientation;
-                direction = ((direction % 360) + 360) % 360; // Ensure positive 0-360
-                
-                this.orientationData.direction = direction;
+            // Get compass direction (alpha) - improved iOS compatibility
+            if (event.alpha !== null && event.alpha !== undefined) {
+                // Use webkitCompassHeading for iOS, fallback to alpha calculation
+                const direction = event.webkitCompassHeading ?? (360 - event.alpha) % 360;
+                this.orientationData.direction = ((direction % 360) + 360) % 360; // Ensure positive 0-360
             } else {
                 this.orientationData.direction = null;
             }
             
-            // Get pitch/elevation (beta)
-            let elevation = event.beta;
-            if (elevation !== null && elevation !== undefined) {
-                // Beta ranges from -180 to 180
-                // When device is held upright (portrait), beta = 0
-                // When tilted up, beta becomes negative
-                // When tilted down, beta becomes positive
-                
-                // Convert to elevation angle (0° = horizon, 90° = straight up, -90° = straight down)
-                if (elevation > 90) {
-                    // Device is upside down
-                    elevation = 180 - elevation;
-                } else if (elevation < -90) {
-                    // Device is upside down
-                    elevation = -180 - elevation;
-                }
-                
-                // Now elevation should be in range -90 to 90
-                // Convert to our coordinate system where 0° = horizon, positive = up
-                elevation = -elevation; // Invert so positive is up
-                
-                this.orientationData.elevation = Math.max(-90, Math.min(90, elevation));
+            // Get pitch/elevation (beta) - simplified calculation
+            if (event.beta !== null && event.beta !== undefined) {
+                // Adjust pitch by subtracting 90 degrees for proper elevation angle
+                // This gives us 0° = horizon, positive = up, negative = down
+                this.orientationData.elevation = Math.max(-90, Math.min(90, event.beta - 90));
             } else {
                 this.orientationData.elevation = null;
             }
@@ -1354,7 +1339,7 @@ class SunHoursApp {
         const eventType = 'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
         console.log('Using orientation event:', eventType);
         
-        window.addEventListener(eventType, this.orientationHandler);
+        window.addEventListener(eventType, this.orientationHandler, true);
     }
 
     stopOrientationUpdates() {
@@ -1366,12 +1351,19 @@ class SunHoursApp {
         }
     }
 
+    getCardinalDirection(azimuth) {
+        const dirs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+        const index = Math.round(azimuth / 22.5) % 16;
+        return dirs[index];
+    }
+
     updateOrientationDisplay() {
         const direction = this.orientationData.direction;
         const elevation = this.orientationData.elevation;
         
         if (direction !== null && direction !== undefined && !isNaN(direction)) {
-            this.currentDirectionDisplay.textContent = `${Math.round(direction)}°`;
+            const cardinal = this.getCardinalDirection(direction);
+            this.currentDirectionDisplay.textContent = `${Math.round(direction)}° ${cardinal}`;
             this.currentDirectionDisplay.style.color = '#00b894';
         } else {
             const noDataText = this.currentLanguage === 'he' ? 'לא זמין' : 'N/A';
@@ -1388,10 +1380,78 @@ class SunHoursApp {
             this.currentElevationDisplay.style.color = '#e17055';
         }
         
+        // Update compass strip if it exists
+        this.updateCompassStrip(direction);
+        
         // Show debug info in console
         if (direction !== null || elevation !== null) {
             console.log('Orientation update:', { direction, elevation });
         }
+    }
+
+    updateCompassStrip(azimuth) {
+        const compassStrip = document.getElementById('compass-strip');
+        if (!compassStrip || azimuth === null || azimuth === undefined) return;
+        
+        // Clear existing marks
+        compassStrip.innerHTML = '';
+        
+        // Create compass marks
+        for (let i = -30; i <= 30; i += 5) {
+            const deg = ((azimuth + i) % 360 + 360) % 360;
+            const isMajor = deg % 30 === 0 || Math.round(deg) % 30 === 0;
+            const roundedDeg = Math.round(deg);
+            const label = roundedDeg === 0 ? "N" : roundedDeg === 90 ? "E" : roundedDeg === 180 ? "S" : roundedDeg === 270 ? "W" : null;
+            
+            const mark = document.createElement('div');
+            mark.className = 'compass-mark';
+            mark.style.cssText = `
+                position: absolute;
+                left: ${50 + (i / 60) * 100}%;
+                transform: translateX(-50%);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            `;
+            
+            const tick = document.createElement('div');
+            tick.style.cssText = `
+                width: 1px;
+                height: ${isMajor ? '12px' : '8px'};
+                background: rgba(255, 255, 255, ${isMajor ? '0.8' : '0.5'});
+                box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+            `;
+            mark.appendChild(tick);
+            
+            if (label) {
+                const labelEl = document.createElement('span');
+                labelEl.textContent = label;
+                labelEl.style.cssText = `
+                    font-size: 10px;
+                    font-weight: bold;
+                    color: rgba(255, 255, 255, 0.9);
+                    text-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
+                    margin-top: 2px;
+                `;
+                mark.appendChild(labelEl);
+            }
+            
+            compassStrip.appendChild(mark);
+        }
+        
+        // Add center indicator
+        const centerIndicator = document.createElement('div');
+        centerIndicator.style.cssText = `
+            position: absolute;
+            left: 50%;
+            top: 0;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 16px;
+            background: #00b894;
+            box-shadow: 0 0 4px rgba(0, 184, 148, 0.8);
+        `;
+        compassStrip.appendChild(centerIndicator);
     }
 
     addMeasurementPoint() {

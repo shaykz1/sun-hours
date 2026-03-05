@@ -693,33 +693,69 @@ html[dir="rtl"] .elevation-table td {
     left: -1px;
 }
 
+/* Compass Strip */
+.compass-strip-container {
+    position: absolute;
+    top: 80px;
+    left: 0;
+    right: 0;
+    height: 32px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 15;
+    overflow: hidden;
+}
+
+.compass-strip {
+    position: relative;
+    height: 100%;
+    margin: 0 48px;
+}
+
+.compass-mark {
+    pointer-events: none;
+}
+
 .measurement-display {
     display: flex;
     justify-content: center;
-    gap: 30px;
-    padding: 15px 20px;
-    background: rgba(0, 0, 0, 0.8);
+    gap: 40px;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(12px);
     color: white;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .measurement-reading {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 5px;
+    gap: 8px;
+    padding: 12px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(8px);
+    min-width: 120px;
 }
 
 .measurement-label {
-    font-size: 12px;
+    font-size: 11px;
+    font-weight: 600;
     opacity: 0.8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .measurement-value {
-    font-size: 24px;
+    font-size: 28px;
     font-weight: bold;
     font-family: 'Courier New', monospace;
-    min-width: 80px;
     text-align: center;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    letter-spacing: 1px;
 }
 
 .camera-controls {
@@ -798,13 +834,28 @@ html[dir="rtl"] .elevation-table td {
         font-size: 16px;
     }
     
+    .compass-strip-container {
+        top: 60px;
+        height: 28px;
+    }
+    
+    .compass-strip {
+        margin: 0 24px;
+    }
+    
     .measurement-display {
         gap: 20px;
-        padding: 10px 15px;
+        padding: 15px;
+        flex-wrap: wrap;
+    }
+    
+    .measurement-reading {
+        min-width: 100px;
+        padding: 10px 16px;
     }
     
     .measurement-value {
-        font-size: 20px;
+        font-size: 24px;
     }
     
     .camera-controls {
@@ -816,6 +867,32 @@ html[dir="rtl"] .elevation-table td {
         padding: 10px 15px;
         font-size: 12px;
         max-width: 100px;
+    }
+    
+    #ios-permission-btn {
+        padding: 14px 20px !important;
+        font-size: 14px !important;
+    }
+}
+
+/* Very small screens */
+@media (max-width: 480px) {
+    .measurement-display {
+        gap: 15px;
+        padding: 12px;
+    }
+    
+    .measurement-reading {
+        min-width: 90px;
+        padding: 8px 12px;
+    }
+    
+    .measurement-value {
+        font-size: 20px;
+    }
+    
+    .compass-strip {
+        margin: 0 16px;
     }
 }
 
