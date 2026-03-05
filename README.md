@@ -90,3 +90,4 @@ sun-calculator/
 
 No installation or server setup required - it's a pure client-side web application.# sun-hours
 # sun-hours
+# sun-hours
