@@ -272,13 +272,15 @@
         </div>
         
         <div class="camera-controls">
+            <!-- Orientation Permission Button (shown when needed) -->
+            <button type="button" id="enable-compass" class="camera-btn compass-btn" data-en="🧭 Enable Compass" data-he="🧭 אפשר מצפן" style="display: none;">🧭 Enable Compass</button>
+            
             <button type="button" id="add-measurement-point" class="camera-btn add-point-btn" data-en="📍 Add Point" data-he="📍 הוסף נקודה">📍 Add Point</button>
             <button type="button" id="remove-last-point" class="camera-btn remove-point-btn" data-en="🗑️ Remove Last" data-he="🗑️ הסר אחרון">🗑️ Remove Last</button>
             <div class="points-counter">
                 <span data-en="Points:" data-he="נקודות:">Points:</span>
                 <span id="points-count">0</span>
             </div>
-            <button type="button" id="toggle-camera" class="camera-btn toggle-camera-btn" data-en="🔄 Flip" data-he="🔄 הפוך">🔄 Flip</button>
             <button type="button" id="measurement-done" class="camera-btn done-btn" data-en="✓ Done" data-he="✓ סיום">✓ Done</button>
         </div>
     </div>

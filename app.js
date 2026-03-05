@@ -41,7 +41,7 @@ class SunHoursApp {
         this.addMeasurementPointBtn = document.getElementById('add-measurement-point');
         this.removeLastPointBtn = document.getElementById('remove-last-point');
         this.pointsCountDisplay = document.getElementById('points-count');
-        this.toggleCameraBtn = document.getElementById('toggle-camera');
+        this.enableCompassBtn = document.getElementById('enable-compass');
         this.measurementDoneBtn = document.getElementById('measurement-done');
         
         
@@ -56,9 +56,9 @@ class SunHoursApp {
         // Camera measurement data
         this.measurementPoints = [];
         this.cameraStream = null;
-        this.cameraFacingMode = 'environment';
         this.orientationData = { direction: null, elevation: null };
         this.isOrientationSupported = false;
+        this.needsPermission = false;
         this.orientationCalibrated = false;
         this.orientationReadings = [];
         
@@ -138,8 +138,8 @@ class SunHoursApp {
             this.removeLastMeasurementPoint();
         });
 
-        this.toggleCameraBtn.addEventListener('click', () => {
-            this.toggleCamera();
+        this.enableCompassBtn.addEventListener('click', () => {
+            this.requestOrientationPermission();
         });
 
         this.measurementDoneBtn.addEventListener('click', () => {
@@ -1134,13 +1134,8 @@ class SunHoursApp {
     // Camera Measurement Methods
     async openCameraMeasurement() {
         try {
-            // Initialize camera facing mode if not set
-            if (!this.cameraFacingMode) {
-                this.cameraFacingMode = 'environment';
-            }
-            
             // Request camera permission
-            await this.startCamera(this.cameraFacingMode);
+            await this.startCamera();
             
             this.cameraMeasurement.style.display = 'flex';
             
@@ -1150,11 +1145,6 @@ class SunHoursApp {
             // Reset measurement data
             this.measurementPoints = [];
             this.updatePointsCounter();
-            
-            // Start orientation updates (only if not iOS or if already supported)
-            if (this.isOrientationSupported) {
-                this.startOrientationUpdates();
-            }
             
             // Initialize HUD
             this.updateHUD();
@@ -1168,17 +1158,17 @@ class SunHoursApp {
         }
     }
 
-    async startCamera(facingMode) {
+    async startCamera() {
         try {
             // Stop existing stream if any
             if (this.cameraStream) {
                 this.cameraStream.getTracks().forEach(track => track.stop());
             }
             
-            // Request new stream
+            // Request new stream with rear camera
             this.cameraStream = await navigator.mediaDevices.getUserMedia({
                 video: {
-                    facingMode: facingMode,
+                    facingMode: 'environment',
                     width: { ideal: 1920 },
                     height: { ideal: 1080 }
                 },
@@ -1193,17 +1183,6 @@ class SunHoursApp {
             console.error('Camera start error:', error);
             throw error;
         }
-    }
-
-    toggleCamera() {
-        const newFacingMode = this.cameraFacingMode === 'environment' ? 'user' : 'environment';
-        this.cameraFacingMode = newFacingMode;
-        this.startCamera(newFacingMode).catch(error => {
-            console.error('Camera toggle error:', error);
-            const errorMsg = this.currentLanguage === 'he' ?
-                'לא ניתן להחליף מצלמה.' : 'Cannot switch camera.';
-            this.showError(errorMsg);
-        });
     }
 
     closeCameraMeasurement() {
@@ -1231,15 +1210,15 @@ class SunHoursApp {
         
         // Check if DeviceOrientationEvent is supported
         if (typeof DeviceOrientationEvent !== 'undefined') {
-            // Request permission for iOS 13+
+            // Check if permission is required (iOS 13+)
             if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                console.log('iOS device detected, showing permission button');
-                this.showIOSPermissionButton();
+                console.log('iOS device detected, needs permission');
+                this.needsPermission = true;
+                this.showCompassButton();
             } else {
                 // Non-iOS devices - start immediately
-                this.isOrientationSupported = true;
                 console.log('Non-iOS device, starting orientation updates');
-                this.startOrientationUpdates();
+                this.setupOrientationListener();
             }
         } else {
             console.log('DeviceOrientationEvent not supported');
@@ -1247,146 +1226,67 @@ class SunHoursApp {
         }
     }
 
-    async requestIOSOrientationPermission() {
-        console.log('Requesting iOS orientation permission...');
-        try {
-            const response = await DeviceOrientationEvent.requestPermission();
-            console.log('Permission response:', response);
+    setupOrientationListener() {
+        const handler = (e) => {
+            this.isOrientationSupported = true;
+            this.needsPermission = false;
+            this.hideCompassButton();
             
-            if (response === 'granted') {
-                this.isOrientationSupported = true;
-                console.log('Device orientation permission granted');
-                this.hideIOSPermissionButton();
-                this.startOrientationUpdates();
-                
-                const successMsg = this.currentLanguage === 'he' ?
-                    'הרשאות חיישני כיוון אושרו!' :
-                    'Compass enabled successfully!';
-                this.showSuccess(successMsg);
-            } else {
-                console.log('Permission denied:', response);
-                const errorMsg = this.currentLanguage === 'he' ?
-                    'הרשאות חיישני כיוון נדחו. אנא אפשר בהגדרות הדפדפן.' :
-                    'Compass permission denied. Please enable in browser settings.';
-                this.showError(errorMsg);
+            if (e.alpha !== null) {
+                const direction = e.webkitCompassHeading ?? (360 - e.alpha) % 360;
+                this.orientationData.direction = ((direction % 360) + 360) % 360;
             }
-        } catch (error) {
-            console.error('Orientation permission error:', error);
-            const errorMsg = this.currentLanguage === 'he' ?
-                'שגיאה בבקשת הרשאות חיישני כיוון.' :
-                'Error requesting compass permissions.';
-            this.showError(errorMsg);
-        }
-    }
-
-    showIOSPermissionButton() {
-        // Remove existing button if any
-        this.hideIOSPermissionButton();
-        
-        // Create permission button
-        const permissionBtn = document.createElement('button');
-        permissionBtn.id = 'ios-permission-btn';
-        permissionBtn.className = 'camera-btn permission-btn';
-        permissionBtn.style.cssText = `
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(116, 185, 255, 0.9);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            padding: 16px 24px;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            z-index: 1001;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(12px);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        `;
-        
-        const buttonText = this.currentLanguage === 'he' ?
-            '🧭 אפשר מצפן' : '🧭 Enable Compass';
-        permissionBtn.innerHTML = buttonText;
-        
-        // Add hover effect
-        permissionBtn.addEventListener('mouseenter', () => {
-            permissionBtn.style.background = 'rgba(9, 132, 227, 0.9)';
-            permissionBtn.style.transform = 'translate(-50%, -50%) scale(1.05)';
-            permissionBtn.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.4)';
-        });
-        
-        permissionBtn.addEventListener('mouseleave', () => {
-            permissionBtn.style.background = 'rgba(116, 185, 255, 0.9)';
-            permissionBtn.style.transform = 'translate(-50%, -50%) scale(1)';
-            permissionBtn.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.3)';
-        });
-        
-        permissionBtn.addEventListener('click', () => {
-            console.log('Permission button clicked');
-            this.requestIOSOrientationPermission();
-        });
-        
-        // Add to camera overlay
-        this.cameraOverlay.appendChild(permissionBtn);
-        
-        // Show instruction message
-        const instructionMsg = this.currentLanguage === 'he' ?
-            'לחץ כדי לאפשר גישה לחיישני הכיוון של המכשיר' :
-            'Tap to enable access to device orientation sensors';
-        this.showSuccess(instructionMsg);
-    }
-
-    hideIOSPermissionButton() {
-        const permissionBtn = document.getElementById('ios-permission-btn');
-        if (permissionBtn) {
-            permissionBtn.remove();
-        }
-    }
-
-    startOrientationUpdates() {
-        if (!this.isOrientationSupported) return;
-        
-        this.orientationHandler = (event) => {
-            console.log('Orientation event:', {
-                alpha: event.alpha,
-                beta: event.beta,
-                gamma: event.gamma,
-                webkitCompassHeading: event.webkitCompassHeading
-            });
-            
-            // Get compass direction (alpha) - improved iOS compatibility
-            if (event.alpha !== null && event.alpha !== undefined) {
-                // Use webkitCompassHeading for iOS, fallback to alpha calculation
-                const direction = event.webkitCompassHeading ?? (360 - event.alpha) % 360;
-                this.orientationData.direction = ((direction % 360) + 360) % 360; // Ensure positive 0-360
-            } else {
-                this.orientationData.direction = null;
-            }
-            
-            // Get pitch/elevation (beta) - simplified calculation
-            if (event.beta !== null && event.beta !== undefined) {
-                // Adjust pitch by subtracting 90 degrees for proper elevation angle
-                // This gives us 0° = horizon, positive = up, negative = down
-                this.orientationData.elevation = Math.max(-90, Math.min(90, event.beta - 90));
-            } else {
-                this.orientationData.elevation = null;
+            if (e.beta !== null) {
+                this.orientationData.elevation = Math.max(-90, Math.min(90, e.beta - 90));
             }
             
             this.updateOrientationDisplay();
             this.updateHUD();
         };
         
-        // Use deviceorientationabsolute if available (more accurate compass)
-        const eventType = 'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
-        console.log('Using orientation event:', eventType);
-        
-        window.addEventListener(eventType, this.orientationHandler, true);
+        window.addEventListener("deviceorientation", handler, true);
+        this.orientationHandler = handler;
+        return handler;
     }
+
+    async requestOrientationPermission() {
+        if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
+            try {
+                const permission = await DeviceOrientationEvent.requestPermission();
+                if (permission === "granted") {
+                    this.setupOrientationListener();
+                    const successMsg = this.currentLanguage === 'he' ?
+                        'הרשאות מצפן אושרו!' : 'Compass permission granted!';
+                    this.showSuccess(successMsg);
+                } else {
+                    const errorMsg = this.currentLanguage === 'he' ?
+                        'הרשאות מצפן נדחו.' : 'Compass permission denied.';
+                    this.showError(errorMsg);
+                }
+            } catch (err) {
+                console.error("Orientation permission error:", err);
+                const errorMsg = this.currentLanguage === 'he' ?
+                    'שגיאה בבקשת הרשאות מצפן.' : 'Error requesting compass permission.';
+                this.showError(errorMsg);
+            }
+        } else {
+            this.setupOrientationListener();
+        }
+    }
+
+    showCompassButton() {
+        if (this.enableCompassBtn) {
+            this.enableCompassBtn.style.display = 'block';
+        }
+    }
+
+    hideCompassButton() {
+        if (this.enableCompassBtn) {
+            this.enableCompassBtn.style.display = 'none';
+        }
+    }
+
+
 
     stopOrientationUpdates() {
         if (this.orientationHandler) {
@@ -1469,6 +1369,13 @@ class SunHoursApp {
             } else {
                 hudWarning.style.display = 'none';
             }
+        }
+        
+        // Show/hide compass button based on permission needs
+        if (this.needsPermission) {
+            this.showCompassButton();
+        } else if (this.isOrientationSupported) {
+            this.hideCompassButton();
         }
         
         // Update compass strip in HUD area

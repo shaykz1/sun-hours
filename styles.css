@@ -913,14 +913,21 @@ html[dir="rtl"] .elevation-table td {
     transform: translateY(-1px);
 }
 
-.toggle-camera-btn {
-    background: #6c5ce7;
+.compass-btn {
+    background: #74b9ff;
     color: white;
+    border-radius: 25px;
+    padding: 12px 24px;
+    font-weight: 600;
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(116, 185, 255, 0.3);
+    box-shadow: 0 4px 16px rgba(116, 185, 255, 0.3);
 }
 
-.toggle-camera-btn:hover {
-    background: #5f3dc4;
+.compass-btn:hover {
+    background: #0984e3;
     transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(116, 185, 255, 0.4);
 }
 
 .points-counter {
