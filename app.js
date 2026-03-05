@@ -43,6 +43,13 @@ class SunHoursApp {
         this.pointsCountDisplay = document.getElementById('points-count');
         this.measurementDoneBtn = document.getElementById('measurement-done');
         
+        // Manual input elements
+        this.manualInputSection = document.getElementById('manual-input-section');
+        this.toggleManualInputBtn = document.getElementById('toggle-manual-input');
+        this.manualDirectionInput = document.getElementById('manual-direction');
+        this.manualElevationInput = document.getElementById('manual-elevation');
+        this.addManualPointBtn = document.getElementById('add-manual-point');
+        
         // Button elements
         this.getLocationBtn = document.getElementById('get-location');
         this.calculateBtn = document.getElementById('calculate');
@@ -135,6 +142,15 @@ class SunHoursApp {
 
         this.measurementDoneBtn.addEventListener('click', () => {
             this.finishMeasurement();
+        });
+
+        // Manual input event listeners
+        this.toggleManualInputBtn.addEventListener('click', () => {
+            this.toggleManualInput();
+        });
+
+        this.addManualPointBtn.addEventListener('click', () => {
+            this.addManualPoint();
         });
 
         // Enter key triggers calculation
@@ -1137,14 +1153,16 @@ class SunHoursApp {
             this.cameraMeasurement.style.display = 'flex';
             
             // Initialize orientation sensors
-            this.initializeOrientationSensors();
+            await this.initializeOrientationSensors();
             
             // Reset measurement data
             this.measurementPoints = [];
             this.updatePointsCounter();
             
-            // Start orientation updates
-            this.startOrientationUpdates();
+            // Start orientation updates (only if not iOS or if already supported)
+            if (this.isOrientationSupported) {
+                this.startOrientationUpdates();
+            }
             
         } catch (error) {
             console.error('Camera access error:', error);
@@ -1165,33 +1183,92 @@ class SunHoursApp {
         // Stop orientation updates
         this.stopOrientationUpdates();
         
+        // Clean up iOS permission button
+        this.hideIOSPermissionButton();
+        
+        // Reset orientation support flag
+        this.isOrientationSupported = false;
+        
         // Hide camera interface
         this.cameraMeasurement.style.display = 'none';
     }
 
-    initializeOrientationSensors() {
+    async initializeOrientationSensors() {
         // Check if DeviceOrientationEvent is supported
         if (typeof DeviceOrientationEvent !== 'undefined') {
             // Request permission for iOS 13+
             if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission()
-                    .then(response => {
-                        if (response === 'granted') {
-                            this.isOrientationSupported = true;
-                        } else {
-                            this.showOrientationPermissionError();
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Orientation permission error:', error);
-                        this.showOrientationPermissionError();
-                    });
+                try {
+                    // Show permission request button for iOS
+                    this.showIOSPermissionButton();
+                } catch (error) {
+                    console.error('Orientation permission error:', error);
+                    this.showOrientationPermissionError();
+                }
             } else {
                 // Non-iOS devices
                 this.isOrientationSupported = true;
+                console.log('Device orientation supported (non-iOS)');
             }
         } else {
             this.showOrientationNotSupported();
+        }
+    }
+
+    async requestIOSOrientationPermission() {
+        try {
+            const response = await DeviceOrientationEvent.requestPermission();
+            if (response === 'granted') {
+                this.isOrientationSupported = true;
+                console.log('Device orientation permission granted');
+                this.hideIOSPermissionButton();
+                this.startOrientationUpdates();
+            } else {
+                this.showOrientationPermissionError();
+            }
+        } catch (error) {
+            console.error('Orientation permission error:', error);
+            this.showOrientationPermissionError();
+        }
+    }
+
+    showIOSPermissionButton() {
+        // Create permission button if it doesn't exist
+        if (!document.getElementById('ios-permission-btn')) {
+            const permissionBtn = document.createElement('button');
+            permissionBtn.id = 'ios-permission-btn';
+            permissionBtn.className = 'camera-btn';
+            permissionBtn.style.cssText = `
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: #e17055;
+                color: white;
+                border: none;
+                padding: 15px 25px;
+                border-radius: 8px;
+                font-size: 16px;
+                font-weight: 600;
+                z-index: 1001;
+            `;
+            
+            const buttonText = this.currentLanguage === 'he' ?
+                'אפשר חיישני כיוון' : 'Enable Orientation Sensors';
+            permissionBtn.textContent = buttonText;
+            
+            permissionBtn.addEventListener('click', () => {
+                this.requestIOSOrientationPermission();
+            });
+            
+            this.cameraOverlay.appendChild(permissionBtn);
+        }
+    }
+
+    hideIOSPermissionButton() {
+        const permissionBtn = document.getElementById('ios-permission-btn');
+        if (permissionBtn) {
+            permissionBtn.remove();
         }
     }
 
@@ -1199,31 +1276,69 @@ class SunHoursApp {
         if (!this.isOrientationSupported) return;
         
         this.orientationHandler = (event) => {
+            console.log('Orientation event:', {
+                alpha: event.alpha,
+                beta: event.beta,
+                gamma: event.gamma,
+                absolute: event.absolute
+            });
+            
             // Get compass direction (alpha)
             let direction = event.alpha;
-            if (direction !== null) {
-                // Normalize to 0-360
-                direction = (360 - direction) % 360;
+            if (direction !== null && direction !== undefined) {
+                // For iOS, we might need to adjust based on screen orientation
+                const screenOrientation = screen.orientation ? screen.orientation.angle : 0;
+                
+                // Normalize compass direction
+                direction = direction + screenOrientation;
+                direction = ((direction % 360) + 360) % 360; // Ensure positive 0-360
+                
                 this.orientationData.direction = direction;
+            } else {
+                this.orientationData.direction = null;
             }
             
             // Get pitch/elevation (beta)
             let elevation = event.beta;
-            if (elevation !== null) {
-                // Convert to elevation angle (0° = horizon, 90° = straight up)
-                elevation = 90 - Math.abs(elevation);
+            if (elevation !== null && elevation !== undefined) {
+                // Beta ranges from -180 to 180
+                // When device is held upright (portrait), beta = 0
+                // When tilted up, beta becomes negative
+                // When tilted down, beta becomes positive
+                
+                // Convert to elevation angle (0° = horizon, 90° = straight up, -90° = straight down)
+                if (elevation > 90) {
+                    // Device is upside down
+                    elevation = 180 - elevation;
+                } else if (elevation < -90) {
+                    // Device is upside down
+                    elevation = -180 - elevation;
+                }
+                
+                // Now elevation should be in range -90 to 90
+                // Convert to our coordinate system where 0° = horizon, positive = up
+                elevation = -elevation; // Invert so positive is up
+                
                 this.orientationData.elevation = Math.max(-90, Math.min(90, elevation));
+            } else {
+                this.orientationData.elevation = null;
             }
             
             this.updateOrientationDisplay();
         };
         
-        window.addEventListener('deviceorientation', this.orientationHandler);
+        // Use deviceorientationabsolute if available (more accurate compass)
+        const eventType = 'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
+        console.log('Using orientation event:', eventType);
+        
+        window.addEventListener(eventType, this.orientationHandler);
     }
 
     stopOrientationUpdates() {
         if (this.orientationHandler) {
+            // Remove both possible event listeners
             window.removeEventListener('deviceorientation', this.orientationHandler);
+            window.removeEventListener('deviceorientationabsolute', this.orientationHandler);
             this.orientationHandler = null;
         }
     }
@@ -1232,20 +1347,27 @@ class SunHoursApp {
         const direction = this.orientationData.direction;
         const elevation = this.orientationData.elevation;
         
-        if (direction !== null) {
+        if (direction !== null && direction !== undefined && !isNaN(direction)) {
             this.currentDirectionDisplay.textContent = `${Math.round(direction)}°`;
             this.currentDirectionDisplay.style.color = '#00b894';
         } else {
-            this.currentDirectionDisplay.textContent = '--°';
+            const noDataText = this.currentLanguage === 'he' ? 'לא זמין' : 'N/A';
+            this.currentDirectionDisplay.textContent = noDataText;
             this.currentDirectionDisplay.style.color = '#e17055';
         }
         
-        if (elevation !== null) {
+        if (elevation !== null && elevation !== undefined && !isNaN(elevation)) {
             this.currentElevationDisplay.textContent = `${Math.round(elevation)}°`;
             this.currentElevationDisplay.style.color = '#00b894';
         } else {
-            this.currentElevationDisplay.textContent = '--°';
+            const noDataText = this.currentLanguage === 'he' ? 'לא זמין' : 'N/A';
+            this.currentElevationDisplay.textContent = noDataText;
             this.currentElevationDisplay.style.color = '#e17055';
+        }
+        
+        // Show debug info in console
+        if (direction !== null || elevation !== null) {
+            console.log('Orientation update:', { direction, elevation });
         }
     }
 
@@ -1351,6 +1473,61 @@ class SunHoursApp {
             'חיישני כיוון לא נתמכים במכשיר זה.' :
             'Orientation sensors not supported on this device.';
         this.showError(errorMsg);
+    }
+    toggleManualInput() {
+        const isVisible = this.manualInputSection.style.display !== 'none';
+        this.manualInputSection.style.display = isVisible ? 'none' : 'block';
+        
+        const buttonText = isVisible ?
+            (this.currentLanguage === 'he' ? '📝 הזנה ידנית' : '📝 Manual Input') :
+            (this.currentLanguage === 'he' ? '❌ סגור הזנה ידנית' : '❌ Close Manual Input');
+        this.toggleManualInputBtn.textContent = buttonText;
+    }
+
+    addManualPoint() {
+        const direction = parseFloat(this.manualDirectionInput.value);
+        const elevation = parseFloat(this.manualElevationInput.value);
+        
+        if (isNaN(direction) || isNaN(elevation)) {
+            const errorMsg = this.currentLanguage === 'he' ?
+                'אנא הזן ערכי כיוון וגובה תקינים.' :
+                'Please enter valid direction and elevation values.';
+            this.showError(errorMsg);
+            return;
+        }
+        
+        if (direction < 0 || direction > 360) {
+            const errorMsg = this.currentLanguage === 'he' ?
+                'כיוון חייב להיות בין 0 ל-360 מעלות.' :
+                'Direction must be between 0 and 360 degrees.';
+            this.showError(errorMsg);
+            return;
+        }
+        
+        if (elevation < -90 || elevation > 90) {
+            const errorMsg = this.currentLanguage === 'he' ?
+                'גובה חייב להיות בין -90 ל-90 מעלות.' :
+                'Elevation must be between -90 and 90 degrees.';
+            this.showError(errorMsg);
+            return;
+        }
+        
+        const point = {
+            direction: Math.round(direction),
+            elevation: Math.round(elevation)
+        };
+        
+        this.measurementPoints.push(point);
+        this.updatePointsCounter();
+        
+        // Clear input fields
+        this.manualDirectionInput.value = '';
+        this.manualElevationInput.value = '';
+        
+        const successMsg = this.currentLanguage === 'he' ?
+            `נקודה ידנית נוספה: ${point.direction}°, ${point.elevation}°` :
+            `Manual point added: ${point.direction}°, ${point.elevation}°`;
+        this.showSuccess(successMsg);
     }
 }
 
