@@ -183,11 +183,75 @@
         </div>
         
         <div class="camera-container">
-            <video id="camera-video" autoplay playsinline></video>
+            <video id="camera-video" autoplay playsinline muted></video>
             <canvas id="camera-overlay"></canvas>
+            
+            <!-- Dark vignette overlay -->
+            <div class="camera-vignette"></div>
+            
+            <!-- Enhanced SVG Crosshair -->
             <div class="camera-crosshair">
-                <div class="crosshair-horizontal"></div>
-                <div class="crosshair-vertical"></div>
+                <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
+                    <!-- Outer circle -->
+                    <circle cx="60" cy="60" r="48" stroke="rgba(0, 184, 148, 0.4)" stroke-width="1" />
+                    
+                    <!-- Inner circle -->
+                    <circle cx="60" cy="60" r="24" stroke="rgba(0, 184, 148, 0.6)" stroke-width="1" />
+                    
+                    <!-- Center dot -->
+                    <circle cx="60" cy="60" r="3" fill="rgba(0, 184, 148, 0.9)" />
+                    
+                    <!-- Cross lines with gaps -->
+                    <!-- Top -->
+                    <line x1="60" y1="2" x2="60" y2="32" stroke="rgba(0, 184, 148, 0.7)" stroke-width="1.5" />
+                    <!-- Bottom -->
+                    <line x1="60" y1="88" x2="60" y2="118" stroke="rgba(0, 184, 148, 0.7)" stroke-width="1.5" />
+                    <!-- Left -->
+                    <line x1="2" y1="60" x2="32" y2="60" stroke="rgba(0, 184, 148, 0.7)" stroke-width="1.5" />
+                    <!-- Right -->
+                    <line x1="88" y1="60" x2="118" y2="60" stroke="rgba(0, 184, 148, 0.7)" stroke-width="1.5" />
+                    
+                    <!-- Tick marks on outer circle -->
+                    <line x1="60" y1="8" x2="60" y2="14" stroke="rgba(0, 184, 148, 0.5)" stroke-width="2" />
+                    <line x1="60" y1="106" x2="60" y2="112" stroke="rgba(0, 184, 148, 0.5)" stroke-width="2" />
+                    <line x1="8" y1="60" x2="14" y2="60" stroke="rgba(0, 184, 148, 0.5)" stroke-width="2" />
+                    <line x1="106" y1="60" x2="112" y2="60" stroke="rgba(0, 184, 148, 0.5)" stroke-width="2" />
+                </svg>
+            </div>
+            
+            <!-- Orientation HUD -->
+            <div class="orientation-hud">
+                <!-- Top bar - Azimuth -->
+                <div class="hud-azimuth">
+                    <div class="hud-panel">
+                        <div class="hud-content">
+                            <span class="hud-icon">🧭</span>
+                            <div class="hud-values">
+                                <span class="hud-main-value" id="hud-azimuth">---°</span>
+                                <span class="hud-cardinal" id="hud-cardinal">--</span>
+                            </div>
+                        </div>
+                        <div class="hud-label">AZIMUTH</div>
+                    </div>
+                </div>
+                
+                <!-- Right side - Pitch -->
+                <div class="hud-pitch">
+                    <div class="hud-panel hud-panel-right">
+                        <div class="hud-content">
+                            <span class="hud-icon">↕</span>
+                            <span class="hud-main-value" id="hud-pitch">---°</span>
+                        </div>
+                        <div class="hud-label">PITCH</div>
+                    </div>
+                </div>
+                
+                <!-- No orientation warning -->
+                <div class="hud-warning" id="hud-warning" style="display: none;">
+                    <div class="hud-warning-content">
+                        Device orientation not available — values simulated
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -214,6 +278,7 @@
                 <span data-en="Points:" data-he="נקודות:">Points:</span>
                 <span id="points-count">0</span>
             </div>
+            <button type="button" id="toggle-camera" class="camera-btn toggle-camera-btn" data-en="🔄 Flip" data-he="🔄 הפוך">🔄 Flip</button>
             <button type="button" id="measurement-done" class="camera-btn done-btn" data-en="✓ Done" data-he="✓ סיום">✓ Done</button>
         </div>
     </div>

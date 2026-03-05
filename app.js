@@ -41,6 +41,7 @@ class SunHoursApp {
         this.addMeasurementPointBtn = document.getElementById('add-measurement-point');
         this.removeLastPointBtn = document.getElementById('remove-last-point');
         this.pointsCountDisplay = document.getElementById('points-count');
+        this.toggleCameraBtn = document.getElementById('toggle-camera');
         this.measurementDoneBtn = document.getElementById('measurement-done');
         
         
@@ -55,6 +56,7 @@ class SunHoursApp {
         // Camera measurement data
         this.measurementPoints = [];
         this.cameraStream = null;
+        this.cameraFacingMode = 'environment';
         this.orientationData = { direction: null, elevation: null };
         this.isOrientationSupported = false;
         this.orientationCalibrated = false;
@@ -134,6 +136,10 @@ class SunHoursApp {
 
         this.removeLastPointBtn.addEventListener('click', () => {
             this.removeLastMeasurementPoint();
+        });
+
+        this.toggleCameraBtn.addEventListener('click', () => {
+            this.toggleCamera();
         });
 
         this.measurementDoneBtn.addEventListener('click', () => {
@@ -1128,16 +1134,14 @@ class SunHoursApp {
     // Camera Measurement Methods
     async openCameraMeasurement() {
         try {
-            // Request camera permission
-            this.cameraStream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: 'environment', // Use rear camera
-                    width: { ideal: 1920 },
-                    height: { ideal: 1080 }
-                }
-            });
+            // Initialize camera facing mode if not set
+            if (!this.cameraFacingMode) {
+                this.cameraFacingMode = 'environment';
+            }
             
-            this.cameraVideo.srcObject = this.cameraStream;
+            // Request camera permission
+            await this.startCamera(this.cameraFacingMode);
+            
             this.cameraMeasurement.style.display = 'flex';
             
             // Initialize orientation sensors
@@ -1152,6 +1156,9 @@ class SunHoursApp {
                 this.startOrientationUpdates();
             }
             
+            // Initialize HUD
+            this.updateHUD();
+            
         } catch (error) {
             console.error('Camera access error:', error);
             const errorMsg = this.currentLanguage === 'he' ?
@@ -1159,6 +1166,44 @@ class SunHoursApp {
                 'Cannot access camera. Please check permissions.';
             this.showError(errorMsg);
         }
+    }
+
+    async startCamera(facingMode) {
+        try {
+            // Stop existing stream if any
+            if (this.cameraStream) {
+                this.cameraStream.getTracks().forEach(track => track.stop());
+            }
+            
+            // Request new stream
+            this.cameraStream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: facingMode,
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 }
+                },
+                audio: false
+            });
+            
+            if (this.cameraVideo) {
+                this.cameraVideo.srcObject = this.cameraStream;
+            }
+            
+        } catch (error) {
+            console.error('Camera start error:', error);
+            throw error;
+        }
+    }
+
+    toggleCamera() {
+        const newFacingMode = this.cameraFacingMode === 'environment' ? 'user' : 'environment';
+        this.cameraFacingMode = newFacingMode;
+        this.startCamera(newFacingMode).catch(error => {
+            console.error('Camera toggle error:', error);
+            const errorMsg = this.currentLanguage === 'he' ?
+                'לא ניתן להחליף מצלמה.' : 'Cannot switch camera.';
+            this.showError(errorMsg);
+        });
     }
 
     closeCameraMeasurement() {
@@ -1333,6 +1378,7 @@ class SunHoursApp {
             }
             
             this.updateOrientationDisplay();
+            this.updateHUD();
         };
         
         // Use deviceorientationabsolute if available (more accurate compass)
@@ -1387,6 +1433,46 @@ class SunHoursApp {
         if (direction !== null || elevation !== null) {
             console.log('Orientation update:', { direction, elevation });
         }
+    }
+
+    updateHUD() {
+        const direction = this.orientationData.direction;
+        const elevation = this.orientationData.elevation;
+        
+        // Update HUD elements
+        const hudAzimuth = document.getElementById('hud-azimuth');
+        const hudCardinal = document.getElementById('hud-cardinal');
+        const hudPitch = document.getElementById('hud-pitch');
+        const hudWarning = document.getElementById('hud-warning');
+        
+        if (hudAzimuth && hudCardinal && hudPitch) {
+            if (direction !== null && direction !== undefined && !isNaN(direction)) {
+                const cardinal = this.getCardinalDirection(direction);
+                hudAzimuth.textContent = `${direction.toFixed(1)}°`;
+                hudCardinal.textContent = cardinal;
+            } else {
+                hudAzimuth.textContent = '---°';
+                hudCardinal.textContent = '--';
+            }
+            
+            if (elevation !== null && elevation !== undefined && !isNaN(elevation)) {
+                hudPitch.textContent = `${elevation.toFixed(1)}°`;
+            } else {
+                hudPitch.textContent = '---°';
+            }
+        }
+        
+        // Show/hide warning based on orientation availability
+        if (hudWarning) {
+            if (!this.isOrientationSupported || (direction === null && elevation === null)) {
+                hudWarning.style.display = 'flex';
+            } else {
+                hudWarning.style.display = 'none';
+            }
+        }
+        
+        // Update compass strip in HUD area
+        this.updateCompassStripHUD(direction);
     }
 
     updateCompassStrip(azimuth) {
@@ -1452,6 +1538,98 @@ class SunHoursApp {
             box-shadow: 0 0 4px rgba(0, 184, 148, 0.8);
         `;
         compassStrip.appendChild(centerIndicator);
+    }
+
+    updateCompassStripHUD(azimuth) {
+        // Create or update compass strip in HUD area if it doesn't exist
+        let hudCompassStrip = document.getElementById('hud-compass-strip');
+        if (!hudCompassStrip && azimuth !== null && azimuth !== undefined) {
+            // Create HUD compass strip
+            const hudCompassContainer = document.createElement('div');
+            hudCompassContainer.style.cssText = `
+                position: absolute;
+                top: 88px;
+                left: 0;
+                right: 0;
+                height: 32px;
+                overflow: hidden;
+                pointer-events: none;
+                z-index: 20;
+            `;
+            
+            hudCompassStrip = document.createElement('div');
+            hudCompassStrip.id = 'hud-compass-strip';
+            hudCompassStrip.style.cssText = `
+                position: relative;
+                height: 100%;
+                margin: 0 48px;
+            `;
+            
+            hudCompassContainer.appendChild(hudCompassStrip);
+            document.querySelector('.orientation-hud').appendChild(hudCompassContainer);
+        }
+        
+        if (!hudCompassStrip || azimuth === null || azimuth === undefined) return;
+        
+        // Clear existing marks
+        hudCompassStrip.innerHTML = '';
+        
+        // Create compass marks for HUD
+        for (let i = -30; i <= 30; i += 5) {
+            const deg = ((azimuth + i) % 360 + 360) % 360;
+            const isMajor = deg % 30 === 0 || Math.round(deg) % 30 === 0;
+            const roundedDeg = Math.round(deg);
+            const label = roundedDeg === 0 ? "N" : roundedDeg === 90 ? "E" : roundedDeg === 180 ? "S" : roundedDeg === 270 ? "W" : null;
+            
+            const mark = document.createElement('div');
+            mark.style.cssText = `
+                position: absolute;
+                left: ${50 + (i / 60) * 100}%;
+                transform: translateX(-50%);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            `;
+            
+            const tick = document.createElement('div');
+            tick.style.cssText = `
+                width: 1px;
+                height: ${isMajor ? '12px' : '8px'};
+                background: rgba(0, 184, 148, ${isMajor ? '0.6' : '0.3'});
+                box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+            `;
+            mark.appendChild(tick);
+            
+            if (label) {
+                const labelEl = document.createElement('span');
+                labelEl.textContent = label;
+                labelEl.style.cssText = `
+                    font-size: 9px;
+                    font-family: 'Courier New', monospace;
+                    font-weight: bold;
+                    color: rgba(0, 184, 148, 0.7);
+                    text-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
+                    margin-top: 0.5px;
+                `;
+                mark.appendChild(labelEl);
+            }
+            
+            hudCompassStrip.appendChild(mark);
+        }
+        
+        // Add center indicator
+        const centerIndicator = document.createElement('div');
+        centerIndicator.style.cssText = `
+            position: absolute;
+            left: 50%;
+            top: 0;
+            transform: translateX(-50%);
+            width: 1px;
+            height: 16px;
+            background: #00b894;
+            box-shadow: 0 0 4px rgba(0, 184, 148, 0.8);
+        `;
+        hudCompassStrip.appendChild(centerIndicator);
     }
 
     addMeasurementPoint() {
