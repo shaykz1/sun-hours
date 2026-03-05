@@ -89,3 +89,4 @@ sun-calculator/
 4. Start calculating sun hours for your location!
 
 No installation or server setup required - it's a pure client-side web application.# sun-hours
+# sun-hours
