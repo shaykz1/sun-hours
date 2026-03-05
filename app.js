@@ -6,7 +6,7 @@
 class SunHoursApp {
     constructor() {
         this.calculator = new SolarCalculator();
-        this.currentLanguage = 'en';
+        this.currentLanguage = 'he';
         this.initializeElements();
         this.setupEventListeners();
         this.setDefaultDate();
@@ -146,12 +146,9 @@ class SunHoursApp {
     }
 
     setupLanguageSupport() {
-        // Set initial language based on browser or default
-        const browserLang = navigator.language || navigator.userLanguage;
-        if (browserLang.startsWith('he')) {
-            this.switchLanguage('he');
-            this.languageSelector.value = 'he';
-        }
+        // Set Hebrew as default language
+        this.switchLanguage('he');
+        this.languageSelector.value = 'he';
     }
 
     switchLanguage(lang) {
