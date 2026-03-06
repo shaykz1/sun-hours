@@ -1252,12 +1252,47 @@ class SunHoursApp {
             this.needsPermission = false;
             this.hideCompassButton();
             
-            if (e.alpha !== null) {
-                const direction = e.webkitCompassHeading ?? (360 - e.alpha) % 360;
-                this.orientationData.direction = ((direction % 360) + 360) % 360;
+            if (e.alpha !== null && e.beta !== null && e.gamma !== null) {
+                // Calculate stable azimuth that doesn't flip with elevation changes
+                let azimuth;
+                
+                if (e.webkitCompassHeading !== undefined) {
+                    // iOS devices - use webkitCompassHeading which is more stable
+                    azimuth = e.webkitCompassHeading;
+                } else {
+                    // Android and other devices - calculate stable azimuth
+                    // Convert device orientation to stable compass heading
+                    const alpha = e.alpha * Math.PI / 180; // Z axis rotation
+                    const beta = e.beta * Math.PI / 180;   // X axis rotation
+                    const gamma = e.gamma * Math.PI / 180; // Y axis rotation
+                    
+                    // Calculate rotation matrix components for stable azimuth
+                    const cA = Math.cos(alpha);
+                    const sA = Math.sin(alpha);
+                    const cB = Math.cos(beta);
+                    const sB = Math.sin(beta);
+                    const cG = Math.cos(gamma);
+                    const sG = Math.sin(gamma);
+                    
+                    // Calculate the compass heading from rotation matrix
+                    // This method maintains consistent direction regardless of device tilt
+                    const rA = -cA * sG - sA * sB * cG;
+                    const rB = -sA * sG + cA * sB * cG;
+                    
+                    azimuth = Math.atan2(rA, rB) * 180 / Math.PI;
+                    azimuth = (azimuth + 360) % 360;
+                }
+                
+                this.orientationData.direction = azimuth;
             }
+            
             if (e.beta !== null) {
-                this.orientationData.elevation = Math.max(-90, Math.min(90, e.beta - 90));
+                // Calculate elevation angle (pitch) - angle from horizontal
+                let elevation = e.beta - 90; // Convert from device orientation to elevation
+                
+                // Clamp elevation to valid range
+                elevation = Math.max(-90, Math.min(90, elevation));
+                this.orientationData.elevation = elevation;
             }
             
             this.updateOrientationDisplay();
