@@ -64,9 +64,8 @@ export default function CameraView() {
         setAzimuth(azimuthValue);
         
         // Set pitch where 0° = horizon (phone vertical), positive = looking up, negative = looking down
-        // Apply transformation: -(x+90) where x is the current pitch value
-        const currentPitch = 90 - e.beta;
-        setPitch(-(currentPitch + 90));
+        const currentPitch = e.beta;
+        setPitch(currentPitch);
       }
     };
     window.addEventListener("deviceorientation", handler, true);
