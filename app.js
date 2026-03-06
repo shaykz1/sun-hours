@@ -1276,7 +1276,7 @@ class SunHoursApp {
                 // When device is flat: beta ≈ 0
                 // When device points up: beta ≈ -90
                 // When device points down: beta ≈ 90
-                let elevation = -(e.beta); // Invert to match elevation convention
+                let elevation = (e.beta-90); // Invert to match elevation convention
                 
                 // Clamp elevation to valid range
                 elevation = Math.max(-90, Math.min(90, elevation));
