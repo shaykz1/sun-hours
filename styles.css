@@ -1087,8 +1087,11 @@ html[dir="rtl"] .elevation-table td {
     justify-content: space-between;
     align-items: center;
     padding: 20px;
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
     background: rgba(0, 0, 0, 0.8);
     gap: 15px;
+    position: relative;
+    z-index: 1002;
 }
 
 .camera-btn {
@@ -1189,7 +1192,8 @@ html[dir="rtl"] .elevation-table td {
     }
     
     .camera-controls {
-        padding: 18px;
+        padding: 16px 18px;
+        padding-bottom: max(16px, env(safe-area-inset-bottom));
         gap: 12px;
     }
     
@@ -1295,7 +1299,8 @@ html[dir="rtl"] .elevation-table td {
     }
     
     .camera-controls {
-        padding: 15px;
+        padding: 12px 15px;
+        padding-bottom: max(12px, env(safe-area-inset-bottom));
         gap: 10px;
         flex-wrap: wrap;
         justify-content: center;
@@ -1419,7 +1424,8 @@ html[dir="rtl"] .elevation-table td {
     }
     
     .camera-controls {
-        padding: 12px;
+        padding: 10px 12px;
+        padding-bottom: max(10px, env(safe-area-inset-bottom));
         gap: 8px;
         flex-direction: column;
     }
