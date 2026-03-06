@@ -1282,7 +1282,10 @@ class SunHoursApp {
                 elevation = Math.max(-90, Math.min(90, elevation));
                 this.orientationData.elevation = elevation;
             }
-            
+            if (elevation > 45.2) {
+                azimuth = (azimuth + 180) % 360;
+                this.orientationData.direction = azimuth;
+            }
             this.updateOrientationDisplay();
             this.updateHUD();
         };
