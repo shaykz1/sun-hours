@@ -1252,35 +1252,19 @@ class SunHoursApp {
             this.needsPermission = false;
             this.hideCompassButton();
             
-            if (e.alpha !== null && e.beta !== null && e.gamma !== null) {
-                // Calculate stable azimuth that doesn't flip with elevation changes
+            if (e.alpha !== null) {
+                // Use the standard approach but ensure it's stable
                 let azimuth;
                 
                 if (e.webkitCompassHeading !== undefined) {
-                    // iOS devices - use webkitCompassHeading which is more stable
+                    // iOS devices - webkitCompassHeading gives true compass heading
                     azimuth = e.webkitCompassHeading;
                 } else {
-                    // Android and other devices - calculate stable azimuth
-                    // Convert device orientation to stable compass heading
-                    const alpha = e.alpha * Math.PI / 180; // Z axis rotation
-                    const beta = e.beta * Math.PI / 180;   // X axis rotation
-                    const gamma = e.gamma * Math.PI / 180; // Y axis rotation
-                    
-                    // Calculate rotation matrix components for stable azimuth
-                    const cA = Math.cos(alpha);
-                    const sA = Math.sin(alpha);
-                    const cB = Math.cos(beta);
-                    const sB = Math.sin(beta);
-                    const cG = Math.cos(gamma);
-                    const sG = Math.sin(gamma);
-                    
-                    // Calculate the compass heading from rotation matrix
-                    // This method maintains consistent direction regardless of device tilt
-                    const rA = -cA * sG - sA * sB * cG;
-                    const rB = -sA * sG + cA * sB * cG;
-                    
-                    azimuth = Math.atan2(rA, rB) * 180 / Math.PI;
-                    azimuth = (azimuth + 360) % 360;
+                    // Android and other devices - use alpha but handle it correctly
+                    // e.alpha is rotation around Z-axis (0-360°)
+                    // 0° = North, 90° = East, 180° = South, 270° = West
+                    // But we need to convert from device coordinate system to compass heading
+                    azimuth = (360 - e.alpha) % 360;
                 }
                 
                 this.orientationData.direction = azimuth;
@@ -1288,7 +1272,11 @@ class SunHoursApp {
             
             if (e.beta !== null) {
                 // Calculate elevation angle (pitch) - angle from horizontal
-                let elevation = e.beta - 90; // Convert from device orientation to elevation
+                // e.beta ranges from -180 to 180
+                // When device is flat: beta ≈ 0
+                // When device points up: beta ≈ -90
+                // When device points down: beta ≈ 90
+                let elevation = -(e.beta); // Invert to match elevation convention
                 
                 // Clamp elevation to valid range
                 elevation = Math.max(-90, Math.min(90, elevation));
