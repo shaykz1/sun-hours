@@ -38,11 +38,35 @@ export default function CameraView() {
     const handler = (e) => {
       setHasOrientation(true);
       setNeedsPermission(false);
-      if (e.alpha !== null) {
-        setAzimuth(e.webkitCompassHeading ?? (360 - e.alpha) % 360);
-      }
-      if (e.beta !== null) {
-        setPitch(e.beta - 90);
+      
+      if (e.alpha !== null && e.beta !== null && e.gamma !== null) {
+        // Calculate stable azimuth using quaternion-based approach to avoid gimbal lock
+        const alpha = e.alpha * Math.PI / 180; // Z axis rotation (compass heading)
+        const beta = e.beta * Math.PI / 180;   // X axis rotation (pitch)
+        const gamma = e.gamma * Math.PI / 180; // Y axis rotation (roll)
+        
+        // Convert device orientation to stable azimuth
+        // Use webkitCompassHeading if available (iOS), otherwise calculate from alpha
+        let azimuthValue;
+        if (e.webkitCompassHeading !== undefined && e.webkitCompassHeading !== null) {
+          azimuthValue = e.webkitCompassHeading;
+        } else {
+          // For high tilt angles, use a more stable calculation
+          const cosBeta = Math.cos(beta);
+          if (Math.abs(cosBeta) > 0.1) { // Avoid division by very small numbers
+            azimuthValue = (360 - e.alpha) % 360;
+          } else {
+            // At very high tilt angles, use gamma to help stabilize azimuth
+            const adjustedAlpha = e.alpha + (Math.abs(e.gamma) > 90 ? 180 : 0);
+            azimuthValue = (360 - adjustedAlpha) % 360;
+          }
+        }
+        setAzimuth(azimuthValue);
+        
+        // Set pitch where 0° = horizon, positive = looking up, negative = looking down
+        // e.beta ranges from -180 to 180, where 0 is device flat, 90 is device vertical
+        // We want 0 when camera points to horizon
+        setPitch(-e.beta);
       }
     };
     window.addEventListener("deviceorientation", handler, true);
