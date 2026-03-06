@@ -64,10 +64,9 @@ export default function CameraView() {
         setAzimuth(azimuthValue);
         
         // Set pitch where 0° = horizon (phone vertical), positive = looking up, negative = looking down
-        // e.beta: 0 = flat (camera up), 90 = vertical (camera to horizon), -90 = upside down
-        // We want: flat = -90°, vertical = 0°, so pitch = e.beta - 90
-        // But we need to invert the sign since positive should be looking up from horizon
-        setPitch(90 - e.beta);
+        // Apply transformation: -(x+90) where x is the current pitch value
+        const currentPitch = 90 - e.beta;
+        setPitch(-(currentPitch + 90));
       }
     };
     window.addEventListener("deviceorientation", handler, true);
