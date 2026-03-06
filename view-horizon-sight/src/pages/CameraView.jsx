@@ -63,10 +63,10 @@ export default function CameraView() {
         }
         setAzimuth(azimuthValue);
         
-        // Set pitch where 0° = horizon, positive = looking up, negative = looking down
-        // e.beta ranges from -180 to 180, where 0 is device flat, 90 is device vertical
-        // We want 0 when camera points to horizon
-        setPitch(-e.beta);
+        // Set pitch where 0° = horizon (phone vertical), positive = looking up, negative = looking down
+        // e.beta ranges from -180 to 180, where 0 is device flat, 90 is device vertical (camera to horizon)
+        // We want 0 when phone is vertical (e.beta = 90), so subtract 90
+        setPitch(e.beta - 90);
       }
     };
     window.addEventListener("deviceorientation", handler, true);
